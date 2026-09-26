@@ -1,0 +1,97 @@
+/* 
+    Premium Sidebar Theme
+    Overrides Filament defaults smoothly using native Tailwind 
+*/
+
+/* Sidebar Background */
+.fi-sidebar {
+    background-color: #3B996D !important;
+    border: none !important;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1) !important;
+    min-height: 100vh !important;
+}
+
+/* Sidebar Text Default */
+.fi-sidebar-item-label {
+    color: rgba(255,255,255,0.9) !important;
+    font-weight: 500 !important;
+}
+.fi-sidebar-item-icon, .fi-sidebar-group-label {
+    color: rgba(255,255,255,0.7) !important;
+}
+
+/* Sidebar Hover (Exclude Active Item) */
+.fi-sidebar-item:not(.fi-active) .fi-sidebar-item-btn:hover {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: blur(4px) !important;
+    transition: all 0.3s ease !important;
+    border-radius: 0.5rem !important;
+}
+.fi-sidebar-item:not(.fi-active) .fi-sidebar-item-btn:hover .fi-sidebar-item-label,
+.fi-sidebar-item:not(.fi-active) .fi-sidebar-item-btn:hover .fi-sidebar-item-icon {
+    color: #ffffff !important;
+}
+
+/* Sidebar Active */
+.fi-active > .fi-sidebar-item-btn {
+    background-color: #ffffff !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15) !important;
+    border-radius: 0.5rem !important;
+    transform: translateX(4px) !important;
+    transition: all 0.3s ease !important;
+}
+.fi-active > .fi-sidebar-item-btn .fi-sidebar-item-label {
+    color: #3B996D !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.5px !important;
+}
+.fi-active > .fi-sidebar-item-btn .fi-sidebar-item-icon {
+    color: #3B996D !important;
+}
+
+/* Custom Scrollbar for Sidebar */
+.fi-sidebar-nav::-webkit-scrollbar {
+    width: 4px;
+}
+.fi-sidebar-nav::-webkit-scrollbar-track {
+    background: transparent;
+}
+.fi-sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+.fi-sidebar-nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+
+
+/* Hide the logo that leaks into the topbar on desktop */
+@media (min-width: 1024px) {
+    .fi-topbar .fi-topbar-start {
+        display: none !important;
+    }
+}
+
+/* Sidebar header: clean layout for Gemini-style header */
+.fi-sidebar-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    padding: 0 !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.fi-sidebar-header-logo-ctn {
+    display: flex !important;
+    width: 100% !important;
+}
+
+
+/* Fix modal overlap issue */
+
+.fi-modal-window { z-index: 50 !important; }
+.fi-modal-close-btn { z-index: 51 !important; }
+
+.fi-modal { z-index: 9999 !important; }

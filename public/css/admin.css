@@ -1,0 +1,168 @@
+/* 
+    Custom Filament UI Overrides 
+    Target: Premium Admin Dashboard with Solid Brand Sidebar
+*/
+:root {
+    --color-brand: #3B996D;
+    --color-brand-dark: #2A6E4E;
+    --color-brand-light: #4bb884;
+}
+
+/* Base Body Adjustments */
+body {
+    background-color: #F4F7F6 !important;
+}
+
+.fi-main {
+    background-color: transparent !important;
+}
+
+/* =========================================================
+   CUSTOM SIDEBAR (SOLID BRAND COLOR)
+   ========================================================= */
+.fi-sidebar {
+    background-color: var(--color-brand) !important;
+    border-right: none !important;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.06);
+}
+
+/* Sidebar Logo / Header Area */
+.fi-sidebar-header {
+    border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+    background-color: transparent !important;
+}
+
+/* Sidebar Text & Icons Default (White / Transparent) */
+.fi-sidebar-item-label, 
+.fi-sidebar-group-label {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.fi-sidebar-item-icon {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Sidebar Hover State */
+.fi-sidebar-item a:hover,
+.fi-sidebar-item button:hover,
+.fi-sidebar-item-button:hover {
+    background-color: #226244 !important;
+}
+.fi-sidebar-item a:hover .fi-sidebar-item-label,
+.fi-sidebar-item a:hover .fi-sidebar-item-icon,
+.fi-sidebar-item button:hover .fi-sidebar-item-label,
+.fi-sidebar-item button:hover .fi-sidebar-item-icon {
+    color: #ffffff !important;
+}
+
+/* Sidebar Active State */
+.fi-sidebar-item-active,
+.fi-sidebar-item-active > a,
+.fi-sidebar-item-active > button,
+.fi-sidebar-item-active .fi-sidebar-item-button {
+    background-color: #226244 !important;
+    border-radius: 8px !important;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05) !important;
+}
+
+.fi-sidebar-item-active .fi-sidebar-item-label,
+.fi-sidebar-item-active .fi-sidebar-item-icon {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+
+/* Hide/Recolor collapse button in sidebar */
+.fi-sidebar-collapse-btn {
+    display: none !important;
+}
+
+/* Ensure Logo text is white if using default text logo */
+.fi-logo {
+    color: #ffffff !important;
+}
+
+/* =========================================================
+   CUSTOM NAVBAR (TOPBAR)
+   ========================================================= */
+.fi-topbar {
+    background-color: #ffffff !important;
+    box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03) !important;
+    border-bottom: 1px solid rgba(0,0,0,0.02) !important;
+}
+
+.fi-topbar .fi-icon-btn {
+    color: var(--color-brand) !important;
+    background: rgba(59, 153, 109, 0.05) !important;
+}
+.fi-topbar .fi-icon-btn:hover {
+    background: rgba(59, 153, 109, 0.15) !important;
+}
+
+/* =========================================================
+   REFINED CARDS & CONTENT (SaaS Style)
+   ========================================================= */
+/* Content wrapper */
+.fi-ta-content, .fi-fo-component, .fi-wi-widget {
+    background-color: #ffffff !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid rgba(0,0,0,0.04) !important;
+}
+
+/* Subtle Table Headers */
+.fi-ta-header-cell {
+    background-color: #fafbfc !important;
+    font-weight: 700 !important;
+    color: #475569 !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+}
+
+/* Standardized Inputs */
+input, select, textarea, .fi-input {
+    border-radius: 8px !important;
+    border-color: #e2e8f0 !important;
+    background-color: #fcfcfc !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+input:focus, select:focus, textarea:focus, .fi-input:focus {
+    border-color: var(--color-brand) !important;
+    background-color: #ffffff !important;
+    box-shadow: 0 0 0 3px rgba(59, 153, 109, 0.15) !important;
+}
+
+/* Buttons */
+button, .fi-btn {
+    border-radius: 8px !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    font-weight: 600 !important;
+}
+
+.fi-btn-color-primary {
+    background-color: var(--color-brand) !important;
+    box-shadow: 0 4px 12px rgba(59, 153, 109, 0.3) !important;
+    border: none !important;
+    color: #ffffff !important;
+}
+
+.fi-btn-color-primary:hover {
+    background-color: var(--color-brand-dark) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(59, 153, 109, 0.4) !important;
+}
+
+/* Login Panel */
+.fi-simple-layout {
+    background-color: #F4F7F6 !important;
+}
+
+.fi-simple-main {
+    border-radius: 16px !important;
+    box-shadow: 0 24px 48px -12px rgba(59, 153, 109, 0.15) !important;
+    border: none !important;
+    background: #ffffff !important;
+}
+
+.fi-simple-main .fi-logo {
+    color: var(--color-brand) !important;
+}
