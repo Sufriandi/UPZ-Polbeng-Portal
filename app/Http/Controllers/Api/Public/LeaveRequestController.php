@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\FeatureAccess;
 use App\Models\LeaveRequest;
+use App\Services\ImageCompressionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -80,8 +81,7 @@ class LeaveRequestController extends Controller
         }
 
         $file = $request->file('proof_file');
-        $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
-        $path = $file->storeAs('leave_proofs', $fileName, 'public');
+        $path = ImageCompressionService::storeAndCompress($file, 'leave_proofs');
 
         $leaveRequest = LeaveRequest::updateOrCreate(
             [

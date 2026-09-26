@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FeatureAccess;
 use App\Models\Penyaluran;
 use App\Models\StudentBankAccount;
+use App\Services\ImageCompressionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -63,8 +64,7 @@ class DisbursementController extends Controller
                 Storage::disk('public')->delete($path);
             }
             $file = $request->file('passbook_file');
-            $fileName = time() . '_buku_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
-            $path = $file->storeAs('student_passbooks', $fileName, 'public');
+            $path = ImageCompressionService::storeAndCompress($file, 'student_passbooks');
         }
 
         // Jika nomor rekening atau nama bank diubah, status verifikasi di-reset ke false agar dicek ulang oleh admin
