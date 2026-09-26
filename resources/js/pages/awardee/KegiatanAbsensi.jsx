@@ -4,7 +4,18 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import CameraCaptureModal from '../../components/attendance/CameraCaptureModal';
 import LeaveRequestModal from '../../components/attendance/LeaveRequestModal';
-import { Calendar, MapPin, Clock, Camera, RefreshCw, FileText } from 'lucide-react';
+import {
+    Calendar,
+    MapPin,
+    Clock,
+    Camera,
+    RefreshCw,
+    FileText,
+    CheckCircle2,
+    XCircle,
+    AlertCircle,
+    RotateCcw,
+} from 'lucide-react';
 
 const KegiatanAbsensi = () => {
     const { isLulus, hasFeatureAccess } = useAuth();
@@ -123,130 +134,192 @@ const KegiatanAbsensi = () => {
                         </div>
                     ) : (
                         <div className="space-y-3 sm:space-y-3.5">
-                            {activities.map((act) => (
-                                <div
-                                    key={act.id}
-                                    className="p-3.5 sm:p-5 border border-slate-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 hover:border-slate-300 transition"
-                                >
-                                    <div className="space-y-1 w-full sm:w-auto">
-                                        <div className="flex items-center gap-2">
-                                            <h2 className="font-bold text-xs sm:text-sm text-slate-900">{act.title}</h2>
-                                            {act.is_mandatory ? (
-                                                <span className="text-[10px] px-2 py-0.5 bg-red-100 text-red-700 rounded-full font-bold">
-                                                    Wajib
+                            {activities.map((act) => {
+                                const lr = act.leave_request || leaveRequestsMap[act.id];
+                                const att = act.attendance;
+                                const isEnded = act.is_ended || (act.end_time && new Date(act.end_time) <= new Date());
+                                const isUpcoming = act.start_time && new Date(act.start_time) > new Date();
+                                const canAttend = act.can_attend;
+
+                                return (
+                                    <div
+                                        key={act.id}
+                                        className="p-4 sm:p-5 border border-slate-200/90 rounded-xl bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 hover:border-slate-300 transition shadow-2xs"
+                                    >
+                                        <div className="space-y-1.5 w-full sm:flex-1">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <h2 className="font-bold text-sm text-slate-900">{act.title}</h2>
+                                                {act.is_mandatory ? (
+                                                    <span className="text-[10px] px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-md font-semibold">
+                                                        Wajib
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-700 border border-slate-200 rounded-md font-semibold">
+                                                        Opsional
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {act.description && (
+                                                <p className="text-xs text-slate-600 line-clamp-2">{act.description}</p>
+                                            )}
+                                            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-1.5 sm:gap-4 text-xs text-slate-500 pt-0.5">
+                                                <span className="flex items-center gap-1.5">
+                                                    <Calendar className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                                                    {new Date(act.start_time).toLocaleString('id-ID')} -{' '}
+                                                    {new Date(act.end_time).toLocaleTimeString('id-ID', {
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                    })}
                                                 </span>
-                                            ) : (
-                                                <span className="text-[10px] px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-bold">
-                                                    Opsional
+                                                <span className="flex items-center gap-1.5">
+                                                    <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                                                    {act.location_name} (Radius {act.radius_meters}m)
                                                 </span>
+                                            </div>
+
+                                            {/* Poin 5: Tampilkan Catatan Penolakan Admin jika izin ditolak */}
+                                            {lr && lr.status === 'rejected' && (
+                                                <div className="mt-2.5 p-2.5 rounded-lg bg-rose-50/80 border border-rose-200/90 text-xs text-rose-800">
+                                                    <div className="flex items-start gap-2">
+                                                        <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                                                        <div>
+                                                            <span className="font-semibold text-rose-900">Catatan Panitia:</span>
+                                                            <p className="mt-0.5 text-rose-700 font-normal">
+                                                                {lr.rejection_note || 'Pengajuan izin belum memenuhi persyaratan.'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             )}
                                         </div>
-                                        {act.description && (
-                                            <p className="text-xs text-slate-600 line-clamp-2">{act.description}</p>
-                                        )}
-                                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-1 sm:gap-4 text-xs text-slate-500 pt-0.5">
-                                            <span className="flex items-center gap-1.5">
-                                                <Calendar className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                                                {new Date(act.start_time).toLocaleString('id-ID')} -{' '}
-                                                {new Date(act.end_time).toLocaleTimeString('id-ID', {
-                                                    hour: '2-digit',
-                                                    minute: '2-digit',
-                                                })}
-                                            </span>
-                                            <span className="flex items-center gap-1.5">
-                                                <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                                                {act.location_name} (Radius {act.radius_meters}m)
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
-                                        {act.attendance ? (
-                                            <span
-                                                className={`w-full sm:w-auto text-center px-3 py-1.5 rounded-full text-xs font-bold inline-flex items-center justify-center gap-1 ${
-                                                    act.attendance.status === 'Hadir'
-                                                        ? 'bg-green-100 text-green-700'
-                                                        : act.attendance.status === 'Izin'
-                                                        ? 'bg-blue-100 text-blue-700'
-                                                        : 'bg-amber-100 text-amber-700'
-                                                }`}
-                                            >
-                                                ✓ {act.attendance.status}
-                                            </span>
-                                        ) : leaveRequestsMap[act.id] ? (
-                                            (() => {
-                                                const lr = leaveRequestsMap[act.id];
-                                                if (lr.status === 'pending') {
+
+                                        {/* Sisi Kanan: Status & Tombol Aksi */}
+                                        <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 flex-shrink-0">
+                                            {(() => {
+                                                // 1. Sudah ada record kehadiran
+                                                if (att) {
+                                                    if (att.status === 'Hadir' || att.status === 'Hadir-Mencurigakan') {
+                                                        return (
+                                                            <span className="w-full sm:w-auto text-center px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center justify-center gap-1.5">
+                                                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                                                Hadir
+                                                            </span>
+                                                        );
+                                                    }
+                                                    if (att.status === 'Izin') {
+                                                        return (
+                                                            <span className="w-full sm:w-auto text-center px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 inline-flex items-center justify-center gap-1.5">
+                                                                <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                                                                Izin Disetujui
+                                                            </span>
+                                                        );
+                                                    }
+                                                    if (att.status === 'Alfa') {
+                                                        return (
+                                                            <span className="w-full sm:w-auto text-center px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center justify-center gap-1.5">
+                                                                <XCircle className="w-4 h-4 text-rose-600" />
+                                                                Alfa
+                                                            </span>
+                                                        );
+                                                    }
+                                                }
+
+                                                // 2. Izin sedang menunggu verifikasi
+                                                if (lr && lr.status === 'pending') {
                                                     return (
-                                                        <span className="w-full sm:w-auto text-center px-3 py-1.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 inline-flex items-center justify-center gap-1">
-                                                            ⏳ Menunggu Verifikasi Izin
+                                                        <span className="w-full sm:w-auto text-center px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 inline-flex items-center justify-center gap-1.5">
+                                                            <Clock className="w-4 h-4 text-amber-600" />
+                                                            Menunggu Verifikasi
                                                         </span>
                                                     );
                                                 }
-                                                if (lr.status === 'approved') {
+
+                                                // 3. Izin disetujui (sebelum att tersinkronisasi)
+                                                if (lr && lr.status === 'approved') {
                                                     return (
-                                                        <span className="w-full sm:w-auto text-center px-3 py-1.5 rounded-full text-xs font-bold bg-green-100 text-green-800 inline-flex items-center justify-center gap-1">
-                                                            ✓ Izin Disetujui
+                                                        <span className="w-full sm:w-auto text-center px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 inline-flex items-center justify-center gap-1.5">
+                                                            <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                                                            Izin Disetujui
                                                         </span>
                                                     );
                                                 }
+
+                                                // 4. Izin ditolak
+                                                if (lr && lr.status === 'rejected') {
+                                                    return (
+                                                        <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                                            <span className="w-full sm:w-auto text-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center justify-center gap-1.5">
+                                                                <XCircle className="w-4 h-4 text-rose-600" />
+                                                                {isEnded ? 'Alfa (Izin Ditolak)' : 'Izin Ditolak'}
+                                                            </span>
+
+                                                            {/* Poin 6 & 7: Ajukan Ulang Izin HANYA jika kegiatan belum selesai/tutup */}
+                                                            {!isEnded && isLeaveFeatureAllowed && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => openLeaveModal(act)}
+                                                                    className="w-full sm:w-auto px-3 py-1.5 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1 cursor-pointer"
+                                                                >
+                                                                    <RotateCcw className="w-3.5 h-3.5 text-emerald-600" />
+                                                                    Ajukan Ulang Izin
+                                                                </button>
+                                                            )}
+
+                                                            {!isEnded && canAttend && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => openModal(act)}
+                                                                    className="w-full sm:w-auto px-3.5 py-1.5 bg-[#3B996D] hover:bg-[#2e7d58] text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                                                                >
+                                                                    <Camera className="w-3.5 h-3.5" />
+                                                                    Absen Sekarang
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                }
+
+                                                // 5. Belum presensi & belum ajukan izin
                                                 return (
-                                                    <div className="flex flex-col items-stretch sm:items-end gap-1.5">
-                                                        <span
-                                                            className="w-full sm:w-auto text-center px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 text-red-700 inline-flex items-center justify-center gap-1"
-                                                            title={lr.rejection_note || 'Pengajuan izin ditolak'}
-                                                        >
-                                                            ✕ Izin Ditolak
-                                                        </span>
-                                                        {isLeaveFeatureAllowed && (
+                                                    <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                                        {canAttend ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => openModal(act)}
+                                                                className="w-full sm:w-auto px-4 py-2 bg-[#3B996D] hover:bg-[#2e7d58] text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                                                            >
+                                                                <Camera className="w-4 h-4" />
+                                                                Absen Sekarang
+                                                            </button>
+                                                        ) : isUpcoming ? (
+                                                            <span className="w-full sm:w-auto text-center px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600">
+                                                                Belum Dibuka
+                                                            </span>
+                                                        ) : (
+                                                            <span className="w-full sm:w-auto text-center px-3 py-1.5 rounded-lg text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center justify-center gap-1.5">
+                                                                <XCircle className="w-4 h-4 text-rose-600" />
+                                                                Alfa
+                                                            </span>
+                                                        )}
+
+                                                        {/* Poin 7: Tombol Ajukan Izin HANYA jika kegiatan belum selesai/ditutup */}
+                                                        {!isEnded && isLeaveFeatureAllowed && (
                                                             <button
                                                                 type="button"
                                                                 onClick={() => openLeaveModal(act)}
-                                                                className="text-[11px] text-emerald-600 hover:underline font-semibold"
+                                                                className="w-full sm:w-auto px-3.5 py-2 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer"
                                                             >
-                                                                Ajukan Ulang Izin
+                                                                <FileText className="w-4 h-4 text-emerald-600" />
+                                                                Ajukan Izin
                                                             </button>
                                                         )}
                                                     </div>
                                                 );
-                                            })()
-                                        ) : (
-                                            <>
-                                                {act.can_attend ? (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => openModal(act)}
-                                                        className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-[#3B996D] hover:bg-[#2e7d58] text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
-                                                    >
-                                                        <Camera className="w-3.5 h-3.5" />
-                                                        Absen Sekarang
-                                                    </button>
-                                                ) : new Date(act.start_time) > new Date() ? (
-                                                    <span className="w-full sm:w-auto text-center px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">
-                                                        Belum Dibuka
-                                                    </span>
-                                                ) : (
-                                                    <span className="w-full sm:w-auto text-center px-3 py-1.5 rounded-full text-xs font-semibold bg-red-50 text-red-600">
-                                                        Selesai / Ditutup
-                                                    </span>
-                                                )}
-
-                                                {/* Tombol Ajukan Izin (Khusus Early Access Mahasiswa) */}
-                                                {isLeaveFeatureAllowed && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => openLeaveModal(act)}
-                                                        className="w-full sm:w-auto px-3.5 py-2.5 sm:py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
-                                                        title="Ajukan dispensasi izin sakit atau tugas kampus resmi"
-                                                    >
-                                                        <FileText className="w-3.5 h-3.5" />
-                                                        Ajukan Izin
-                                                    </button>
-                                                )}
-                                            </>
-                                        )}
+                                            })()}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>

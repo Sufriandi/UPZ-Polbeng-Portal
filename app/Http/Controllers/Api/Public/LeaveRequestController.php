@@ -59,6 +59,14 @@ class LeaveRequestController extends Controller
 
         $activity = Activity::findOrFail($validated['activity_id']);
 
+        // Poin 7: Jika kegiatan sudah selesai / ditutup, tidak bisa mengajukan izin
+        if ($activity->end_time && now()->greaterThan($activity->end_time)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kegiatan ini telah selesai atau ditutup. Anda tidak dapat mengajukan permohonan izin.',
+            ], 422);
+        }
+
         // Cek apakah sudah pernah mengajukan untuk kegiatan ini
         $existing = LeaveRequest::where('pendaftar_id', $user->id)
             ->where('activity_id', $activity->id)
@@ -83,6 +91,7 @@ class LeaveRequestController extends Controller
         $file = $request->file('proof_file');
         $path = ImageCompressionService::storeAndCompress($file, 'leave_proofs');
 
+        // Poin 6: Jika mengajukan ulang (sebelumnya ditolak), perbarui created_at ke now() agar naik ke antrean teratas admin
         $leaveRequest = LeaveRequest::updateOrCreate(
             [
                 'pendaftar_id' => $user->id,
@@ -96,8 +105,15 @@ class LeaveRequestController extends Controller
                 'rejection_note' => null,
                 'reviewed_by' => null,
                 'reviewed_at' => null,
+                'created_at' => now(),
             ]
         );
+
+        // Hapus record Alfa sementara jika sebelumnya sempat tercatat karena ditolak
+        \App\Models\Attendance::where('pendaftar_id', $user->id)
+            ->where('activity_id', $activity->id)
+            ->where('status', 'Alfa')
+            ->delete();
 
         $leaveRequest->load('activity');
 

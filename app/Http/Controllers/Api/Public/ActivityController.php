@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Public;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Attendance;
+use App\Models\LeaveRequest;
 use App\Models\Pendaftar;
 use Illuminate\Http\Request;
 
@@ -43,10 +44,59 @@ class ActivityController extends Controller
             ->get()
             ->keyBy('activity_id');
 
+        $userLeaveRequests = LeaveRequest::where('pendaftar_id', $pendaftar->id)
+            ->whereIn('activity_id', $activities->pluck('id'))
+            ->get()
+            ->keyBy('activity_id');
+
         $now = now();
 
-        $formattedActivities = $activities->map(function ($activity) use ($userAttendances, $now) {
+        $formattedActivities = $activities->map(function ($activity) use (&$userAttendances, $userLeaveRequests, $now, $pendaftar) {
             $att = $userAttendances->get($activity->id);
+            $lr = $userLeaveRequests->get($activity->id);
+            $isEnded = $activity->end_time && $now->greaterThan($activity->end_time);
+
+            // Poin 8: Jika izin ditolak ATAU sampai waktu kegiatan/absensi selesai tidak melakukan absensi, status otomatis Alfa
+            if (!$att && $isEnded) {
+                // Jika izin disetujui tapi belum tercatat
+                if ($lr && $lr->status === 'approved') {
+                    $att = Attendance::firstOrCreate(
+                        [
+                            'activity_id' => $activity->id,
+                            'pendaftar_id' => $pendaftar->id,
+                        ],
+                        [
+                            'method' => 'digital',
+                            'status' => 'Izin',
+                            'server_timestamp' => $activity->end_time,
+                            'note' => 'Izin disetujui: ' . $lr->reason,
+                            'recorded_by' => 'Sistem UPZ',
+                        ]
+                    );
+                    $userAttendances->put($activity->id, $att);
+                } elseif (!$lr || $lr->status === 'rejected') {
+                    // Jika izin ditolak atau tidak ada izin sama sekali
+                    $note = ($lr && $lr->status === 'rejected')
+                        ? 'Otomatis Alfa: Pengajuan izin ditolak dan tidak melakukan presensi hingga kegiatan selesai'
+                        : 'Otomatis Alfa: Tidak melakukan presensi hingga waktu kegiatan berakhir';
+
+                    $att = Attendance::firstOrCreate(
+                        [
+                            'activity_id' => $activity->id,
+                            'pendaftar_id' => $pendaftar->id,
+                        ],
+                        [
+                            'method' => 'digital',
+                            'status' => 'Alfa',
+                            'server_timestamp' => $activity->end_time,
+                            'note' => $note,
+                            'recorded_by' => 'Sistem UPZ',
+                        ]
+                    );
+                    $userAttendances->put($activity->id, $att);
+                }
+            }
+
             $canAttend = $now->between($activity->start_time, $activity->end_time) && !$att;
 
             return [
@@ -61,8 +111,10 @@ class ActivityController extends Controller
                 'end_time' => $activity->end_time->toISOString(),
                 'is_mandatory' => (bool) $activity->is_mandatory,
                 'is_open_now' => $now->between($activity->start_time, $activity->end_time),
+                'is_ended' => (bool) $isEnded,
                 'can_attend' => $canAttend,
                 'attendance' => $att,
+                'leave_request' => $lr,
             ];
         });
 
