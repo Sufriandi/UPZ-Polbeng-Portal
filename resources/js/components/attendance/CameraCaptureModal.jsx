@@ -27,6 +27,8 @@ const CameraCaptureModal = ({ isOpen, onClose, activity, onSuccess }) => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const overlayRef = useRef(null);
+    const snapshotRef = useRef(null);
+    const streamRef = useRef(null);
 
     // Preload model on mount
     useEffect(() => {
@@ -90,10 +92,23 @@ const CameraCaptureModal = ({ isOpen, onClose, activity, onSuccess }) => {
         };
     }, [isOpen, activity]);
 
+    useEffect(() => {
+        snapshotRef.current = snapshotBase64;
+    }, [snapshotBase64]);
+
+    useEffect(() => {
+        streamRef.current = videoStream;
+        if (videoRef.current && videoStream && videoRef.current.srcObject !== videoStream) {
+            videoRef.current.srcObject = videoStream;
+            videoRef.current.play().catch(() => {});
+        }
+    }, [videoStream]);
+
     const stopCamera = () => {
         if (videoStream) {
             videoStream.getTracks().forEach((track) => track.stop());
             setVideoStream(null);
+            streamRef.current = null;
         }
         if (faceDetectionRef.current) {
             cancelAnimationFrame(faceDetectionRef.current);
@@ -165,8 +180,10 @@ const CameraCaptureModal = ({ isOpen, onClose, activity, onSuccess }) => {
                 },
             });
             setVideoStream(stream);
+            streamRef.current = stream;
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
+                videoRef.current.play().catch(() => {});
 
                 const initDetection = () => {
                     if (!hasNativeDetector && !faceModelRef.current) {
@@ -180,6 +197,11 @@ const CameraCaptureModal = ({ isOpen, onClose, activity, onSuccess }) => {
                     }
 
                     const detectFaceLoop = async () => {
+                        if (snapshotRef.current) {
+                            faceDetectionRef.current = requestAnimationFrame(detectFaceLoop);
+                            return;
+                        }
+
                         if (videoRef.current && videoRef.current.readyState === 4) {
                             try {
                                 let detectedFaces = [];
@@ -205,6 +227,7 @@ const CameraCaptureModal = ({ isOpen, onClose, activity, onSuccess }) => {
 
                 videoRef.current.onloadedmetadata = () => {
                     setCameraStarting(false);
+                    videoRef.current.play().catch(() => {});
                     initDetection();
                 };
             }
@@ -239,10 +262,34 @@ const CameraCaptureModal = ({ isOpen, onClose, activity, onSuccess }) => {
 
         const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
         setSnapshotBase64(dataUrl);
+
+        if (overlayRef.current) {
+            const overlayCtx = overlayRef.current.getContext('2d');
+            overlayCtx.clearRect(0, 0, overlayRef.current.width, overlayRef.current.height);
+        }
     };
 
     const retakeSnapshot = () => {
         setSnapshotBase64(null);
+        setFaceDetected(false);
+        setIsDetecting(true);
+
+        if (overlayRef.current) {
+            const ctx = overlayRef.current.getContext('2d');
+            ctx.clearRect(0, 0, overlayRef.current.width, overlayRef.current.height);
+        }
+
+        const currentStream = streamRef.current || videoStream;
+        const isStreamActive = currentStream && currentStream.active && currentStream.getVideoTracks().some(track => track.readyState === 'live');
+
+        if (!isStreamActive) {
+            startCamera(facingMode);
+        } else if (videoRef.current) {
+            if (videoRef.current.srcObject !== currentStream) {
+                videoRef.current.srcObject = currentStream;
+            }
+            videoRef.current.play().catch(() => {});
+        }
     };
 
     const handleAttendanceSubmit = async () => {
@@ -332,42 +379,49 @@ const CameraCaptureModal = ({ isOpen, onClose, activity, onSuccess }) => {
                                 </div>
                             </div>
                         )}
-                        {!snapshotBase64 ? (
-                            <>
-                                <video
-                                    ref={videoRef}
-                                    autoPlay
-                                    playsInline
-                                    muted
-                                    className={`w-full h-full object-cover ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
-                                />
-                                <canvas
-                                    ref={overlayRef}
-                                    className="absolute inset-0 w-full h-full object-cover pointer-events-none z-10"
-                                />
+                        {/* Video Element: Always mounted to keep active stream alive and prevent black screen on retake */}
+                        <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            muted
+                            className={`w-full h-full object-cover ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
+                        />
+                        <canvas
+                            ref={overlayRef}
+                            className={`absolute inset-0 w-full h-full object-cover pointer-events-none z-10 ${snapshotBase64 ? 'hidden' : ''}`}
+                        />
 
-                                <div className="absolute inset-0 pointer-events-none z-10">
-                                    <div className="absolute top-4 left-0 right-0 flex justify-center">
-                                        {isDetecting ? (
-                                            <span className="bg-black/60 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm animate-pulse shadow-sm">
-                                                Menyiapkan Pendeteksi Wajah...
-                                            </span>
-                                        ) : faceDetected ? (
-                                            <span className="bg-emerald-500/90 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow-lg shadow-emerald-500/20 flex items-center gap-1.5">
-                                                <Check className="w-3.5 h-3.5" />
-                                                Wajah Terdeteksi
-                                            </span>
-                                        ) : (
-                                            <span className="bg-red-500/90 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow-lg shadow-red-500/20 animate-pulse flex items-center gap-1.5">
-                                                <X className="w-3.5 h-3.5" />
-                                                Wajah Tidak Terdeteksi
-                                            </span>
-                                        )}
-                                    </div>
+                        {/* Snapshot Preview: Overlay on top of video when snapshot is taken */}
+                        {snapshotBase64 && (
+                            <img
+                                src={snapshotBase64}
+                                alt="Snapshot Presensi"
+                                className="absolute inset-0 w-full h-full object-cover z-20"
+                            />
+                        )}
+
+                        {/* Face detection badge: only show when camera is active and no snapshot */}
+                        {!snapshotBase64 && (
+                            <div className="absolute inset-0 pointer-events-none z-10">
+                                <div className="absolute top-4 left-0 right-0 flex justify-center">
+                                    {isDetecting ? (
+                                        <span className="bg-black/60 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm animate-pulse shadow-sm">
+                                            Menyiapkan Pendeteksi Wajah...
+                                        </span>
+                                    ) : faceDetected ? (
+                                        <span className="bg-emerald-500/90 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow-lg shadow-emerald-500/20 flex items-center gap-1.5">
+                                            <Check className="w-3.5 h-3.5" />
+                                            Wajah Terdeteksi
+                                        </span>
+                                    ) : (
+                                        <span className="bg-red-500/90 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow-lg shadow-red-500/20 animate-pulse flex items-center gap-1.5">
+                                            <X className="w-3.5 h-3.5" />
+                                            Wajah Tidak Terdeteksi
+                                        </span>
+                                    )}
                                 </div>
-                            </>
-                        ) : (
-                            <img src={snapshotBase64} alt="Snapshot Presensi" className="w-full h-full object-cover" />
+                            </div>
                         )}
                         <canvas ref={canvasRef} className="hidden" />
                     </div>
