@@ -67,53 +67,36 @@ class LeaveRequestController extends Controller
             ], 422);
         }
 
-        // Cek apakah sudah pernah mengajukan untuk kegiatan ini
+        // Cek apakah sudah pernah mengajukan untuk kegiatan ini (tidak ada pengajuan ulang)
         $existing = LeaveRequest::where('pendaftar_id', $user->id)
             ->where('activity_id', $activity->id)
             ->first();
 
         if ($existing) {
-            if ($existing->status === 'approved') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Pengajuan izin Anda untuk kegiatan ini telah disetujui sebelumnya.',
-                ], 422);
-            }
+            $msg = match ($existing->status) {
+                'approved' => 'Pengajuan izin Anda untuk kegiatan ini telah disetujui sebelumnya.',
+                'pending' => 'Anda telah memiliki pengajuan izin yang sedang menunggu verifikasi admin untuk kegiatan ini.',
+                'rejected' => 'Pengajuan izin Anda untuk kegiatan ini telah ditolak. Tidak diperkenankan melakukan pengajuan izin ulang.',
+                default => 'Anda sudah pernah mengajukan permohonan izin untuk kegiatan ini.',
+            };
 
-            if ($existing->status === 'pending') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda telah memiliki pengajuan izin yang sedang menunggu verifikasi admin untuk kegiatan ini.',
-                ], 422);
-            }
+            return response()->json([
+                'success' => false,
+                'message' => $msg,
+            ], 422);
         }
 
         $file = $request->file('proof_file');
         $path = ImageCompressionService::storeAndCompress($file, 'leave_proofs');
 
-        // Poin 6: Jika mengajukan ulang (sebelumnya ditolak), perbarui created_at ke now() agar naik ke antrean teratas admin
-        $leaveRequest = LeaveRequest::updateOrCreate(
-            [
-                'pendaftar_id' => $user->id,
-                'activity_id' => $activity->id,
-            ],
-            [
-                'reason' => $validated['reason'],
-                'proof_file_path' => $path,
-                'proof_file_name' => $file->getClientOriginalName(),
-                'status' => 'pending',
-                'rejection_note' => null,
-                'reviewed_by' => null,
-                'reviewed_at' => null,
-                'created_at' => now(),
-            ]
-        );
-
-        // Hapus record Alfa sementara jika sebelumnya sempat tercatat karena ditolak
-        \App\Models\Attendance::where('pendaftar_id', $user->id)
-            ->where('activity_id', $activity->id)
-            ->where('status', 'Alfa')
-            ->delete();
+        $leaveRequest = LeaveRequest::create([
+            'pendaftar_id' => $user->id,
+            'activity_id' => $activity->id,
+            'reason' => $validated['reason'],
+            'proof_file_path' => $path,
+            'proof_file_name' => $file->getClientOriginalName(),
+            'status' => 'pending',
+        ]);
 
         $leaveRequest->load('activity');
 

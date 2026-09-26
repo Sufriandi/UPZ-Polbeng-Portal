@@ -14,7 +14,6 @@ import {
     CheckCircle2,
     XCircle,
     AlertCircle,
-    RotateCcw,
 } from 'lucide-react';
 
 const KegiatanAbsensi = () => {
@@ -244,7 +243,7 @@ const KegiatanAbsensi = () => {
                                                     );
                                                 }
 
-                                                // 4. Izin ditolak
+                                                // 4. Izin ditolak (tidak ada pengajuan ulang)
                                                 if (lr && lr.status === 'rejected') {
                                                     return (
                                                         <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
@@ -252,18 +251,6 @@ const KegiatanAbsensi = () => {
                                                                 <XCircle className="w-4 h-4 text-rose-600" />
                                                                 {isEnded ? 'Alfa (Izin Ditolak)' : 'Izin Ditolak'}
                                                             </span>
-
-                                                            {/* Poin 6 & 7: Ajukan Ulang Izin HANYA jika kegiatan belum selesai/tutup */}
-                                                            {!isEnded && isLeaveFeatureAllowed && (
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => openLeaveModal(act)}
-                                                                    className="w-full sm:w-auto px-3 py-1.5 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1 cursor-pointer"
-                                                                >
-                                                                    <RotateCcw className="w-3.5 h-3.5 text-emerald-600" />
-                                                                    Ajukan Ulang Izin
-                                                                </button>
-                                                            )}
 
                                                             {!isEnded && canAttend && (
                                                                 <button
