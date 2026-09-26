@@ -23,6 +23,7 @@ import MonitoringDashboard from './pages/awardee/MonitoringDashboard';
 import KegiatanAbsensi from './pages/awardee/KegiatanAbsensi';
 import RiwayatKehadiran from './pages/awardee/RiwayatKehadiran';
 import ArsipBerkas from './pages/awardee/ArsipBerkas';
+import DataRekeningPenyaluran from './pages/awardee/DataRekeningPenyaluran';
 import Profile from './pages/Profile';
 
 const AppLayout = ({ children }) => {
@@ -126,6 +127,8 @@ const App = () => {
                         <Route path="/portal/riwayat-kehadiran" element={<RiwayatKehadiran />} />
                         <Route path="/arsip-berkas" element={<ArsipBerkas />} />
                         <Route path="/portal/arsip-berkas" element={<ArsipBerkas />} />
+                        <Route path="/rekening-bantuan" element={<DataRekeningPenyaluran />} />
+                        <Route path="/portal/rekening-bantuan" element={<DataRekeningPenyaluran />} />
 
                         {/* Common Profile Routes */}
                         <Route path="/profil" element={<Profile />} />

@@ -3,10 +3,11 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import CameraCaptureModal from '../../components/attendance/CameraCaptureModal';
-import { Calendar, MapPin, Clock, Camera, RefreshCw } from 'lucide-react';
+import LeaveRequestModal from '../../components/attendance/LeaveRequestModal';
+import { Calendar, MapPin, Clock, Camera, RefreshCw, FileText } from 'lucide-react';
 
 const KegiatanAbsensi = () => {
-    const { isLulus } = useAuth();
+    const { isLulus, hasFeatureAccess } = useAuth();
 
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -15,6 +16,13 @@ const KegiatanAbsensi = () => {
     // Modal Camera
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedActivity, setSelectedActivity] = useState(null);
+
+    // Modal Leave Request
+    const [leaveRequestsMap, setLeaveRequestsMap] = useState({});
+    const [leaveModalOpen, setLeaveModalOpen] = useState(false);
+    const [selectedLeaveActivity, setSelectedLeaveActivity] = useState(null);
+
+    const isLeaveFeatureAllowed = hasFeatureAccess('leave_request');
 
     // Route Guard: If not awardee, redirect to applicant status
     if (!isLulus) {
@@ -28,6 +36,21 @@ const KegiatanAbsensi = () => {
             const res = await api.get('/activities');
             if (res.data.success) {
                 setActivities(res.data.data.activities || []);
+            }
+
+            if (isLeaveFeatureAllowed) {
+                try {
+                    const lrRes = await api.get('/leave-requests');
+                    if (lrRes.data.success) {
+                        const map = {};
+                        (lrRes.data.data || []).forEach((lr) => {
+                            map[lr.activity_id] = lr;
+                        });
+                        setLeaveRequestsMap(map);
+                    }
+                } catch (e) {
+                    // Ignore error if not permitted
+                }
             }
         } catch (err) {
             setError(err.response?.data?.message || 'Gagal memuat daftar kegiatan.');
@@ -47,11 +70,16 @@ const KegiatanAbsensi = () => {
         return () => {
             window.removeEventListener('upz:activity_updated', handleRealtimeUpdate);
         };
-    }, []);
+    }, [isLeaveFeatureAllowed]);
 
     const openModal = (act) => {
         setSelectedActivity(act);
         setModalOpen(true);
+    };
+
+    const openLeaveModal = (act) => {
+        setSelectedLeaveActivity(act);
+        setLeaveModalOpen(true);
     };
 
     return (
@@ -131,34 +159,90 @@ const KegiatanAbsensi = () => {
                                             </span>
                                         </div>
                                     </div>
-                                    <div className="w-full sm:w-auto flex justify-end">
+                                    <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
                                         {act.attendance ? (
                                             <span
                                                 className={`w-full sm:w-auto text-center px-3 py-1.5 rounded-full text-xs font-bold inline-flex items-center justify-center gap-1 ${
                                                     act.attendance.status === 'Hadir'
                                                         ? 'bg-green-100 text-green-700'
+                                                        : act.attendance.status === 'Izin'
+                                                        ? 'bg-blue-100 text-blue-700'
                                                         : 'bg-amber-100 text-amber-700'
                                                 }`}
                                             >
                                                 ✓ {act.attendance.status}
                                             </span>
-                                        ) : act.can_attend ? (
-                                            <button
-                                                type="button"
-                                                onClick={() => openModal(act)}
-                                                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-[#3B996D] hover:bg-[#2e7d58] text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
-                                            >
-                                                <Camera className="w-3.5 h-3.5" />
-                                                Absen Sekarang
-                                            </button>
-                                        ) : new Date(act.start_time) > new Date() ? (
-                                            <span className="w-full sm:w-auto text-center px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">
-                                                Belum Dibuka
-                                            </span>
+                                        ) : leaveRequestsMap[act.id] ? (
+                                            (() => {
+                                                const lr = leaveRequestsMap[act.id];
+                                                if (lr.status === 'pending') {
+                                                    return (
+                                                        <span className="w-full sm:w-auto text-center px-3 py-1.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 inline-flex items-center justify-center gap-1">
+                                                            ⏳ Menunggu Verifikasi Izin
+                                                        </span>
+                                                    );
+                                                }
+                                                if (lr.status === 'approved') {
+                                                    return (
+                                                        <span className="w-full sm:w-auto text-center px-3 py-1.5 rounded-full text-xs font-bold bg-green-100 text-green-800 inline-flex items-center justify-center gap-1">
+                                                            ✓ Izin Disetujui
+                                                        </span>
+                                                    );
+                                                }
+                                                return (
+                                                    <div className="flex flex-col items-stretch sm:items-end gap-1.5">
+                                                        <span
+                                                            className="w-full sm:w-auto text-center px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 text-red-700 inline-flex items-center justify-center gap-1"
+                                                            title={lr.rejection_note || 'Pengajuan izin ditolak'}
+                                                        >
+                                                            ✕ Izin Ditolak
+                                                        </span>
+                                                        {isLeaveFeatureAllowed && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => openLeaveModal(act)}
+                                                                className="text-[11px] text-emerald-600 hover:underline font-semibold"
+                                                            >
+                                                                Ajukan Ulang Izin
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()
                                         ) : (
-                                            <span className="w-full sm:w-auto text-center px-3 py-1.5 rounded-full text-xs font-semibold bg-red-50 text-red-600">
-                                                Selesai / Ditutup
-                                            </span>
+                                            <>
+                                                {act.can_attend ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openModal(act)}
+                                                        className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-[#3B996D] hover:bg-[#2e7d58] text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                                                    >
+                                                        <Camera className="w-3.5 h-3.5" />
+                                                        Absen Sekarang
+                                                    </button>
+                                                ) : new Date(act.start_time) > new Date() ? (
+                                                    <span className="w-full sm:w-auto text-center px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">
+                                                        Belum Dibuka
+                                                    </span>
+                                                ) : (
+                                                    <span className="w-full sm:w-auto text-center px-3 py-1.5 rounded-full text-xs font-semibold bg-red-50 text-red-600">
+                                                        Selesai / Ditutup
+                                                    </span>
+                                                )}
+
+                                                {/* Tombol Ajukan Izin (Khusus Early Access Mahasiswa) */}
+                                                {isLeaveFeatureAllowed && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openLeaveModal(act)}
+                                                        className="w-full sm:w-auto px-3.5 py-2.5 sm:py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                                                        title="Ajukan dispensasi izin sakit atau tugas kampus resmi"
+                                                    >
+                                                        <FileText className="w-3.5 h-3.5" />
+                                                        Ajukan Izin
+                                                    </button>
+                                                )}
+                                            </>
                                         )}
                                     </div>
                                 </div>
@@ -173,6 +257,14 @@ const KegiatanAbsensi = () => {
                 isOpen={modalOpen}
                 activity={selectedActivity}
                 onClose={() => setModalOpen(false)}
+                onSuccess={loadActivities}
+            />
+
+            {/* Modal Pengajuan Izin */}
+            <LeaveRequestModal
+                isOpen={leaveModalOpen}
+                activity={selectedLeaveActivity}
+                onClose={() => setLeaveModalOpen(false)}
                 onSuccess={loadActivities}
             />
         </div>

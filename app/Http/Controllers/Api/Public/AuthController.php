@@ -158,6 +158,7 @@ class AuthController extends Controller
                 'pendaftaran' => $pendaftaran,
                 'is_lulus' => $isLulus,
                 'status' => $status,
+                'allowed_features' => \App\Models\FeatureAccess::getAllowedFeatures($pendaftar->email),
             ],
         ]);
     }

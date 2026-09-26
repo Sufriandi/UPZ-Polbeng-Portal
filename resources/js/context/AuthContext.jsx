@@ -9,6 +9,7 @@ export const AuthProvider = ({ children }) => {
     const [pendaftaran, setPendaftaran] = useState(null);
     const [isLulus, setIsLulus] = useState(false);
     const [status, setStatus] = useState('Belum Mendaftar');
+    const [allowedFeatures, setAllowedFeatures] = useState([]);
     const [token, setToken] = useState(localStorage.getItem('portal_token') || null);
     const [loading, setLoading] = useState(true);
 
@@ -27,6 +28,7 @@ export const AuthProvider = ({ children }) => {
                 setPendaftaran(data.pendaftaran);
                 setIsLulus(data.is_lulus);
                 setStatus(data.status);
+                setAllowedFeatures(data.allowed_features || []);
                 localStorage.setItem('portal_pendaftar', JSON.stringify(data.pendaftar));
             }
         } catch (err) {
@@ -37,6 +39,7 @@ export const AuthProvider = ({ children }) => {
             setProgram(null);
             setPendaftaran(null);
             setIsLulus(false);
+            setAllowedFeatures([]);
             setToken(null);
         } finally {
             setLoading(false);
@@ -104,8 +107,13 @@ export const AuthProvider = ({ children }) => {
             setProgram(null);
             setPendaftaran(null);
             setIsLulus(false);
+            setAllowedFeatures([]);
             window.location.href = '/login';
         }
+    };
+
+    const hasFeatureAccess = (featureName) => {
+        return Array.isArray(allowedFeatures) && allowedFeatures.includes(featureName);
     };
 
     return (
@@ -117,6 +125,8 @@ export const AuthProvider = ({ children }) => {
                 pendaftaran,
                 isLulus,
                 status,
+                allowedFeatures,
+                hasFeatureAccess,
                 token,
                 loading,
                 login,

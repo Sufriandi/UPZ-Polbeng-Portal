@@ -14,11 +14,12 @@ import {
     LogOut,
     Menu,
     X,
-    Award
+    Award,
+    CreditCard
 } from 'lucide-react';
 
 const DashboardLayout = () => {
-    const { pendaftar, program, isLulus, logout, fetchUser } = useAuth();
+    const { pendaftar, program, isLulus, logout, fetchUser, hasFeatureAccess } = useAuth();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const navigate = useNavigate();
 
@@ -51,6 +52,11 @@ const DashboardLayout = () => {
             label: 'Riwayat Kehadiran',
             icon: Clock,
         },
+        ...(hasFeatureAccess('disbursement_info') ? [{
+            to: '/rekening-bantuan',
+            label: 'Rekening & Penyaluran',
+            icon: CreditCard,
+        }] : []),
         {
             to: '/arsip-berkas',
             label: 'Arsip Berkas',

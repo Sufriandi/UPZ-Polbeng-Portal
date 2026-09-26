@@ -38,4 +38,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/attendances', [App\Http\Controllers\Api\Public\AttendanceController::class, 'store']);
     Route::get('/attendances/me', [App\Http\Controllers\Api\Public\AttendanceController::class, 'myAttendances']);
     Route::get('/attendances/export-pdf', [App\Http\Controllers\Api\Public\AttendanceController::class, 'exportPdf']);
+
+    // Early Access: Fitur Pengajuan Izin / Dispensasi Kegiatan (Leave Request with Proof)
+    Route::get('/leave-requests', [App\Http\Controllers\Api\Public\LeaveRequestController::class, 'index']);
+    Route::post('/leave-requests', [App\Http\Controllers\Api\Public\LeaveRequestController::class, 'store']);
+
+    // Early Access: Fitur Rekening Bank Mahasiswa & Informasi Penyaluran Bantuan (Disbursement Info)
+    Route::get('/bank-account', [App\Http\Controllers\Api\Public\DisbursementController::class, 'getBankInfo']);
+    Route::post('/bank-account', [App\Http\Controllers\Api\Public\DisbursementController::class, 'updateBankInfo']);
+    Route::get('/disbursements', [App\Http\Controllers\Api\Public\DisbursementController::class, 'getDisbursements']);
 });
+
